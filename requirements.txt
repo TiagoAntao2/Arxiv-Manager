@@ -1,0 +1,6 @@
+arxiv>=2.2.0
+python-dotenv>=0.9.9
+feedparser>=6.0.12
+openai>=1.108.0
+flask>=3.0.0
+requests>=2.32.0

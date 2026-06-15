@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings — arXiv Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+
+    header {
+      background: #1a1a2e; color: #fff;
+      padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    nav a {
+      color: #aac4ff; text-decoration: none; font-size: 0.9rem;
+      padding: 0.3rem 0.7rem; border-radius: 4px;
+    }
+    nav a:hover { background: rgba(255,255,255,0.1); }
+    nav a.active { color: #fff; background: rgba(255,255,255,0.15); }
+
+    .flash {
+      background: #e8f5e9; color: #2e7d32; border-left: 4px solid #4caf50;
+      padding: 0.75rem 2rem; font-size: 0.9rem;
+    }
+
+    main { padding: 2rem; max-width: 800px; margin: 0 auto; }
+    h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #1a1a2e; }
+    p.hint { font-size: 0.82rem; color: #777; margin-bottom: 0.75rem; }
+
+    .field { margin-bottom: 2rem; }
+    textarea {
+      width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 6px;
+      font-family: monospace; font-size: 0.88rem; resize: vertical; background: #fff;
+    }
+    textarea:focus { outline: none; border-color: #4f8ef7; }
+
+    .btn {
+      padding: 0.5rem 1.2rem; border: none; border-radius: 4px;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-primary { background: #4f8ef7; color: #fff; }
+    .btn-primary:hover { background: #3a7ae0; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>arXiv Manager</h1>
+  <nav>
+    <a href="/">Daily</a>
+    <a href="/library">Library</a>
+    <a href="/search">Search</a>
+    <a href="/settings" class="active">Settings</a>
+  </nav>
+</header>
+
+{% for msg in get_flashed_messages() %}
+  <div class="flash">{{ msg }}</div>
+{% endfor %}
+
+<main>
+  <form method="post">
+    <div class="field">
+      <h2>Keywords</h2>
+      <p class="hint">One keyword or phrase per line. Papers matching any of these are fetched daily.</p>
+      <textarea name="keywords" rows="16">{{ keywords }}</textarea>
+    </div>
+    <div class="field">
+      <h2>Research interests</h2>
+      <p class="hint">Plain-text description used by the LLM to decide which papers to highlight.</p>
+      <textarea name="interests" rows="4">{{ interests }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </form>
+</main>
+</body>
+</html>

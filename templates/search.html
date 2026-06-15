@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search — arXiv Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+
+    header {
+      background: #1a1a2e; color: #fff;
+      padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    nav a {
+      color: #aac4ff; text-decoration: none; font-size: 0.9rem;
+      padding: 0.3rem 0.7rem; border-radius: 4px;
+    }
+    nav a:hover { background: rgba(255,255,255,0.1); }
+    nav a.active { color: #fff; background: rgba(255,255,255,0.15); }
+
+    .search-panel {
+      background: #fff; border-bottom: 1px solid #ddd;
+      padding: 1rem 2rem; display: flex; gap: 0.75rem; align-items: flex-end;
+    }
+    .search-panel label { font-size: 0.82rem; color: #555; display: block; margin-bottom: 0.3rem; }
+    .search-panel input[type=text] {
+      flex: 1; padding: 0.45rem 0.8rem;
+      border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem;
+    }
+    .search-panel input[type=number] {
+      width: 6rem; padding: 0.45rem 0.6rem;
+      border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem;
+    }
+    .btn {
+      padding: 0.45rem 1rem; border: none; border-radius: 4px;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-primary { background: #4f8ef7; color: #fff; }
+    .btn-primary:hover { background: #3a7ae0; }
+    .btn-secondary { background: #555; color: #fff; }
+    .btn-secondary:hover { background: #333; }
+    .btn-save { background: #9b59b6; color: #fff; }
+    .btn-save:hover { background: #7d3c98; }
+    .btn-save.saved { background: #aaa; cursor: default; }
+    .btn-highlight { background: #f39c12; color: #fff; }
+    .btn-highlight:hover { background: #d68910; }
+    .btn-highlight:disabled { background: #888; cursor: not-allowed; }
+    .paper.highlighted { border-left: 4px solid #f39c12; background: #fffdf5; }
+    .badge { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 600; }
+    .badge-highlight { background: #fff3e0; color: #e65100; }
+    #highlight-status { font-size: 0.85rem; color: #555; padding: 0.5rem 2rem; display: none; background: #fffbe6; border-bottom: 1px solid #ffe082; }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+
+    .count { padding: 0.5rem 2rem; font-size: 0.85rem; color: #666; background: #f9f9f9; border-bottom: 1px solid #eee; }
+
+    main { padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; }
+
+    .paper {
+      background: #fff; border-radius: 6px; border: 1px solid #e0e0e0;
+      margin-bottom: 1rem; padding: 1rem 1.2rem;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 0.5rem 1rem; align-items: start;
+    }
+    .paper-title {
+      font-size: 1rem; font-weight: 600; color: #1a1a2e;
+      text-decoration: none; display: block; margin-bottom: 0.2rem;
+    }
+    .paper-title:hover { text-decoration: underline; }
+    .paper-meta { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+    .abstract { font-size: 0.85rem; color: #444; line-height: 1.5; display: none; margin-top: 0.4rem; }
+    .abstract.open { display: block; }
+    .toggle-abstract {
+      font-size: 0.78rem; color: #4f8ef7; cursor: pointer;
+      background: none; border: none; padding: 0;
+    }
+    .toggle-abstract:hover { text-decoration: underline; }
+    .paper-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+
+    .empty { text-align: center; color: #888; padding: 3rem; }
+    .hint { text-align: center; color: #aaa; padding: 3rem; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>arXiv Manager</h1>
+  <nav>
+    <a href="/">Daily</a>
+    <a href="/library">Library</a>
+    <a href="/search" class="active">Search</a>
+    <a href="/settings">Settings</a>
+  </nav>
+</header>
+
+<form class="search-panel" method="get" action="/search">
+  <div style="flex:1">
+    <label>Search arXiv</label>
+    <input type="text" name="q" value="{{ query }}" placeholder="e.g. topological insulator, moiré graphene…" autofocus>
+  </div>
+  <div style="display:flex;gap:0.4rem;align-items:flex-end;">
+    <div>
+      <label>Look back</label>
+      <input type="number" name="amount" value="{{ amount }}" min="1" max="9999"
+        style="width:5rem;padding:0.45rem 0.6rem;border:1px solid #ccc;border-radius:4px;font-size:0.9rem;">
+    </div>
+    <select name="unit" style="padding:0.45rem 0.6rem;border:1px solid #ccc;border-radius:4px;font-size:0.9rem;">
+      <option value="hours" {{ 'selected' if unit == 'hours' else '' }}>Hours</option>
+      <option value="weeks" {{ 'selected' if unit == 'weeks' else '' }}>Weeks</option>
+      <option value="months" {{ 'selected' if unit == 'months' else '' }}>Months</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary" style="margin-top:1.2rem">Search</button>
+</form>
+
+{% if query %}
+  <div class="count" style="display:flex;align-items:center;gap:1rem;">
+    <span>{{ results|length }} result{{ 's' if results|length != 1 else '' }} for "{{ query }}" in the last {{ amount }} {{ unit }}</span>
+    {% if results %}
+      <div style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+        <input type="text" id="motivation-input" placeholder="Highlight context (auto = your settings interests)"
+          style="flex:1;padding:0.3rem 0.6rem;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+        <button class="btn btn-highlight btn-sm" id="highlight-btn" onclick="runHighlight()">Get highlights</button>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+<div id="highlight-status"></div>
+
+<main>
+  {% if results %}
+    {% for p in results %}
+    <div class="paper" id="paper-{{ loop.index }}" data-id="{{ p.arxiv_id }}">
+      <div>
+        <a class="paper-title" href="{{ p.url }}" target="_blank">{{ p.title }}</a>
+        <div class="paper-meta">{{ p.authors }} &nbsp;·&nbsp; {{ p.submitted }}</div>
+        <button class="toggle-abstract" onclick="toggleAbstract(this)">Show abstract</button>
+        <div class="abstract">{{ p.abstract }}</div>
+      </div>
+      <div class="paper-actions">
+        <button class="btn btn-save btn-sm" onclick="savePaper(this, {{ p | tojson }})">Save to library</button>
+        <a href="https://arxiv.org/pdf/{{ p.arxiv_id }}.pdf" target="_blank" class="btn btn-secondary btn-sm">PDF</a>
+      </div>
+    </div>
+    {% endfor %}
+  {% elif query %}
+    <div class="empty">No results found.</div>
+  {% else %}
+    <div class="hint">Enter a query above to search arXiv. Results are temporary and not saved unless you click "Save to library".</div>
+  {% endif %}
+</main>
+
+<script>
+  const PAPERS = {{ results | tojson }};
+
+  async function runHighlight() {
+    const btn = document.getElementById('highlight-btn');
+    const status = document.getElementById('highlight-status');
+    btn.disabled = true; btn.textContent = 'Thinking…';
+    status.style.display = 'block';
+    status.textContent = 'Asking LLM to evaluate papers…';
+
+    const motivation = document.getElementById('motivation-input').value.trim();
+    const resp = await fetch('/highlight-papers', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({papers: PAPERS, motivation: motivation || null})
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      const ids = new Set(data.highlighted);
+      const container = document.querySelector('main');
+      const cards = [...document.querySelectorAll('.paper')];
+      cards.forEach(card => {
+        if (ids.has(card.dataset.id)) {
+          card.classList.add('highlighted');
+          const actions = card.querySelector('.paper-actions');
+          if (!actions.querySelector('.badge-highlight')) {
+            actions.insertAdjacentHTML('afterbegin', '<span class="badge badge-highlight">★ Highlight</span>');
+          }
+        }
+      });
+      // move highlighted cards to top, preserving their relative order
+      cards.filter(c => ids.has(c.dataset.id)).forEach(c => container.prepend(c));
+      status.textContent = `${data.highlighted.length} of ${PAPERS.length} papers highlighted.`;
+    } else {
+      status.textContent = `Error: ${data.error}`;
+    }
+    btn.disabled = false; btn.textContent = 'Get highlights';
+  }
+
+  function toggleAbstract(btn) {
+    const abs = btn.nextElementSibling;
+    abs.classList.toggle('open');
+    btn.textContent = abs.classList.contains('open') ? 'Hide abstract' : 'Show abstract';
+  }
+
+  async function savePaper(btn, paper) {
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    const resp = await fetch('/save-paper', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(paper)
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      btn.textContent = 'Saved ✓';
+      btn.classList.add('saved');
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Save to library';
+      alert('Error: ' + data.error);
+    }
+  }
+</script>
+</body>
+</html>

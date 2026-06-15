@@ -1,0 +1,8 @@
+.env_
+arxiv_manager.db
+.last_run
+.venv/
+__pycache__/
+*.pyc
+contents/
+pdfs/

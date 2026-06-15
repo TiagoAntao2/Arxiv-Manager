@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Library — arXiv Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+
+    header {
+      background: #1a1a2e; color: #fff;
+      padding: 1rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; white-space: nowrap; }
+    nav a {
+      color: #aac4ff; text-decoration: none; font-size: 0.9rem;
+      padding: 0.3rem 0.7rem; border-radius: 4px;
+    }
+    nav a:hover { background: rgba(255,255,255,0.1); }
+    nav a.active { color: #fff; background: rgba(255,255,255,0.15); }
+
+    .search-bar { display: flex; gap: 0.5rem; flex: 1; }
+    .search-bar input {
+      flex: 1; padding: 0.4rem 0.8rem;
+      border: none; border-radius: 4px; font-size: 0.95rem;
+    }
+    .btn {
+      padding: 0.4rem 0.9rem; border: none; border-radius: 4px;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-primary { background: #4f8ef7; color: #fff; }
+    .btn-primary:hover { background: #3a7ae0; }
+    .btn-secondary { background: #555; color: #fff; }
+    .btn-secondary:hover { background: #333; }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+
+    .toolbar {
+      padding: 0.6rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+      background: #fff; border-bottom: 1px solid #ddd;
+    }
+    .toolbar label { font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+    .count { margin-left: auto; font-size: 0.85rem; color: #666; }
+
+    #download-bar {
+      display: none; position: sticky; top: 0; z-index: 10;
+      background: #4f8ef7; color: #fff;
+      padding: 0.6rem 2rem; align-items: center; gap: 1rem;
+    }
+    #download-bar.visible { display: flex; }
+    #download-bar span { flex: 1; font-size: 0.9rem; }
+
+    main { padding: 1.5rem 2rem; max-width: 1100px; margin: 0 auto; }
+
+    .paper {
+      background: #fff; border-radius: 6px; border: 1px solid #e0e0e0;
+      margin-bottom: 1rem; padding: 1rem 1.2rem;
+      display: grid; grid-template-columns: 2rem 1fr auto;
+      gap: 0.5rem 1rem; align-items: start;
+    }
+    .paper.downloaded { border-left: 4px solid #4caf50; }
+    .paper.highlighted { border-left: 4px solid #f39c12; background: #fffdf5; }
+    .paper input[type=checkbox] { margin-top: 0.2rem; width: 1rem; height: 1rem; cursor: pointer; }
+
+    .paper-body { min-width: 0; }
+    .paper-title {
+      font-size: 1rem; font-weight: 600; color: #1a1a2e;
+      text-decoration: none; display: block; margin-bottom: 0.2rem;
+    }
+    .paper-title:hover { text-decoration: underline; }
+    .paper-meta { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+    .abstract { font-size: 0.85rem; color: #444; line-height: 1.5; display: none; margin-top: 0.4rem; }
+    .abstract.open { display: block; }
+    .toggle-abstract {
+      font-size: 0.78rem; color: #4f8ef7; cursor: pointer;
+      background: none; border: none; padding: 0;
+    }
+    .toggle-abstract:hover { text-decoration: underline; }
+
+    .paper-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+    .badge { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 600; }
+    .badge-downloaded { background: #e8f5e9; color: #2e7d32; }
+    .badge-new { background: #e3f2fd; color: #1565c0; }
+    .badge-highlight { background: #fff3e0; color: #e65100; }
+
+    .empty { text-align: center; color: #888; padding: 3rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>arXiv Manager</h1>
+  <nav>
+    <a href="/">Daily</a>
+    <a href="/library" class="active">Library</a>
+    <a href="/search">Search</a>
+    <a href="/settings">Settings</a>
+  </nav>
+  <form class="search-bar" method="get" action="/library">
+    {% if downloaded_only %}<input type="hidden" name="downloaded" value="1">{% endif %}
+    {% if highlighted_only %}<input type="hidden" name="highlighted" value="1">{% endif %}
+    <input type="text" name="q" value="{{ search }}" placeholder="Search all papers…">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search %}<a href="/library" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
+</header>
+
+<div class="toolbar">
+  <label><input type="checkbox" id="select-all"> Select all</label>
+  <form method="get" action="/library" style="display:flex;align-items:center;gap:1rem;">
+    {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+    <label style="font-size:0.9rem;">
+      <input type="checkbox" name="downloaded" value="1" onchange="this.form.submit()"
+        {{ 'checked' if downloaded_only else '' }}>
+      Downloaded only
+    </label>
+    <label style="font-size:0.9rem;">
+      <input type="checkbox" name="highlighted" value="1" onchange="this.form.submit()"
+        {{ 'checked' if highlighted_only else '' }}>
+      Highlighted only
+    </label>
+  </form>
+  <span class="count">{{ papers|length }} paper{{ 's' if papers|length != 1 else '' }}</span>
+</div>
+
+<div id="download-bar">
+  <span id="selected-count"></span>
+  <button class="btn btn-primary btn-sm" onclick="downloadSelected()">Download PDFs</button>
+</div>
+
+<main>
+  {% if papers %}
+    {% for p in papers %}
+    <div class="paper {{ 'downloaded' if p['is_downloaded'] else '' }} {{ 'highlighted' if p['highlighted'] == 1 else '' }}"
+         id="paper-{{ p['arxiv_id']|replace('/', '-') }}">
+      <input type="checkbox" class="paper-check" data-id="{{ p['arxiv_id'] }}">
+      <div class="paper-body">
+        <a class="paper-title" href="{{ p['url'] }}" target="_blank">{{ p['title'] }}</a>
+        <div class="paper-meta">{{ p['authors'] }} &nbsp;·&nbsp; {{ p['submitted'][:10] }}</div>
+        <button class="toggle-abstract" onclick="toggleAbstract(this)">Show abstract</button>
+        <div class="abstract">{{ p['abstract'] }}</div>
+      </div>
+      <div class="paper-actions">
+        {% if p['highlighted'] == 1 %}<span class="badge badge-highlight">★ Highlight</span>{% endif %}
+        {% if p['is_downloaded'] %}
+          <span class="badge badge-downloaded">Downloaded</span>
+          <button class="btn btn-secondary btn-sm" onclick="openPdf('{{ p['arxiv_id'] }}')">Open</button>
+        {% else %}
+          <span class="badge badge-new">New</span>
+          <button class="btn btn-primary btn-sm" onclick="downloadOne('{{ p['arxiv_id'] }}', this)">Download</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No papers found.</div>
+  {% endif %}
+</main>
+
+<script>
+  document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.paper-check').forEach(cb => cb.checked = this.checked);
+    updateBar();
+  });
+  document.querySelectorAll('.paper-check').forEach(cb => cb.addEventListener('change', updateBar));
+
+  function updateBar() {
+    const checked = [...document.querySelectorAll('.paper-check:checked')];
+    const bar = document.getElementById('download-bar');
+    if (checked.length > 0) {
+      bar.classList.add('visible');
+      document.getElementById('selected-count').textContent = `${checked.length} paper${checked.length > 1 ? 's' : ''} selected`;
+    } else { bar.classList.remove('visible'); }
+  }
+
+  function toggleAbstract(btn) {
+    const abs = btn.nextElementSibling;
+    abs.classList.toggle('open');
+    btn.textContent = abs.classList.contains('open') ? 'Hide abstract' : 'Show abstract';
+  }
+
+  async function downloadSelected() {
+    const ids = [...document.querySelectorAll('.paper-check:checked')].map(cb => cb.dataset.id);
+    await downloadIds(ids);
+  }
+
+  async function downloadOne(id, btn) {
+    btn.disabled = true; btn.textContent = 'Downloading…';
+    await downloadIds([id]);
+  }
+
+  async function downloadIds(ids) {
+    const resp = await fetch('/download', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ids})
+    });
+    const results = await resp.json();
+    for (const [id, res] of Object.entries(results)) {
+      const card = document.getElementById(`paper-${id.replace('/', '-')}`);
+      if (!card) continue;
+      if (res.ok) {
+        card.classList.add('downloaded');
+        card.querySelector('.paper-actions').innerHTML = `
+          <span class="badge badge-downloaded">Downloaded</span>
+          <button class="btn btn-secondary btn-sm" onclick="openPdf('${id}')">Open</button>`;
+        const cb = card.querySelector('.paper-check');
+        if (cb) cb.checked = false;
+      } else { alert(`Failed to download ${id}: ${res.error}`); }
+    }
+    updateBar();
+  }
+
+  async function openPdf(id) {
+    await fetch('/open', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id})});
+  }
+</script>
+</body>
+</html>
