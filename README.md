@@ -72,30 +72,3 @@ python app.py
 The app opens automatically at `http://localhost:5050`.
 
 On Windows you can also double-click `launch.bat`.
-
-## Automated daily fetch
-
-To fetch papers automatically every weekday at 8:30, add this to your crontab (`crontab -e`):
-
-```
-30 8 * * 1-5 /path/to/Arxiv-Manager/run_daily.sh >> /path/to/logs/daily.log 2>&1
-```
-
-Make the script executable first:
-
-```bash
-chmod +x run_daily.sh
-```
-
-## Project structure
-
-```
-app.py          — Flask web server
-daily.py        — arXiv fetcher, writes to local DB
-store.py        — SQLite database layer
-config.json     — keywords and research interests
-run_daily.sh    — shell script for cron
-templates/      — HTML templates
-pdfs/           — downloaded PDFs (gitignored)
-contents/       — daily abstracts text files (gitignored)
-```
