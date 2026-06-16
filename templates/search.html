@@ -97,6 +97,11 @@
     <label>Search arXiv</label>
     <input type="text" name="q" value="{{ query }}" placeholder="e.g. topological insulator, moiré graphene…" autofocus>
   </div>
+  <div style="width:16rem">
+    <label>Author</label>
+    <input type="text" name="author" value="{{ author }}" placeholder="e.g. Andrei, Jarillo-Herrero"
+      style="width:100%;padding:0.45rem 0.8rem;border:1px solid #ccc;border-radius:4px;font-size:0.95rem;">
+  </div>
   <div style="display:flex;gap:0.4rem;align-items:flex-end;">
     <div>
       <label>Look back</label>
@@ -114,7 +119,7 @@
 
 {% if query %}
   <div class="count" style="display:flex;align-items:center;gap:1rem;">
-    <span>{{ results|length }} result{{ 's' if results|length != 1 else '' }} for "{{ query }}" in the last {{ amount }} {{ unit }}</span>
+    <span>{{ results|length }} result{{ 's' if results|length != 1 else '' }} for "{{ query }}"{% if author %} by "{{ author }}"{% endif %} in the last {{ amount }} {{ unit }}</span>
     {% if results %}
       <div style="display:flex;align-items:center;gap:0.5rem;flex:1;">
         <input type="text" id="motivation-input" placeholder="Highlight context (auto = your settings interests)"

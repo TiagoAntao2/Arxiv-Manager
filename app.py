@@ -211,15 +211,22 @@ def settings():
 @app.route("/search")
 def search():
     query = request.args.get("q", "").strip()
+    author = request.args.get("author", "").strip()
     amount = int(request.args.get("amount", 24))
     unit = request.args.get("unit", "hours")
     multipliers = {"hours": 1, "weeks": 168, "months": 730}
     hours = amount * multipliers.get(unit, 1)
     results = []
-    if query:
+    if query or author:
+        parts = []
+        if query:
+            parts.append(query)
+        if author:
+            parts.append(f"au:{author}")
+        combined_query = " AND ".join(parts)
         client = arxiv_lib.Client()
         search_obj = arxiv_lib.Search(
-            query=query,
+            query=combined_query,
             sort_by=arxiv_lib.SortCriterion.SubmittedDate,
             max_results=50,
         )
@@ -239,7 +246,7 @@ def search():
                 "url": r.entry_id.strip(),
                 "submitted": pub.strftime("%Y-%m-%d"),
             })
-    return render_template("search.html", results=results, query=query, amount=amount, unit=unit)
+    return render_template("search.html", results=results, query=query, author=author, amount=amount, unit=unit)
 
 
 def _format_authors(authors) -> str:
